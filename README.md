@@ -105,55 +105,63 @@ XLORM is a high-performance, easy-to-use lightweight ORM framework designed spec
 ## Installation
 
 ```bash
-go get -u github.com/windsurf/xlorm
+go get github.com/go-sql-driver/mysql
+go get github.com/jiankeluoluo/xlorm
 ```
 
 ## Quick Start
 
+### 1. Database Connection
+
 ```go
-import (
-    "github.com/windsurf/xlorm/db"
-    "os"
-    "time"
-)
+import "your_project/db"
 
 // Configure database connection
 config := &db.Config{
-    DBName:            "master",
-    Driver:            "MySQL",
-    Host:              os.Getenv("DB_HOST"),
-    Port:              3306,
-    Username:          os.Getenv("DB_USERNAME"),
-    Password:          os.Getenv("DB_PASSWORD"),
-    Database:          "myapp",
-    
-    // Connection pool configuration
-    MaxOpenConns:      50,
-    MaxIdleConns:      10,
-    ConnMaxLifetime:   30 * time.Minute,
-    
+    DBName:            "master",               // Database alias for distinguishing different database instances
+    Driver:            "MySQL",                 // Database driver type, currently only supports "MySQL"
+    Host:              "localhost",             // Database server address, supports IP or domain
+    Port:              3306,                    // Database server port, MySQL default is 3306
+    Username:          "your_username",         // Database login username
+    Password:          "your_password",         // Database login password
+    Database:          "your_database",         // Specific database name to connect
+    Charset:           "utf8mb4",               // Database character set, recommended utf8mb4 for full Unicode support
+    TablePrefix:       "tb_",                   // Table name prefix for multi-project or module shared database
+    LogDir:            "./logs",                // Log file storage directory, supports relative and absolute paths
+    LogLevel:          "debug",                 // Log level, optional debug/info/warn/error, recommended debug during development
+    LogBufferSize:     5000,                   // Log buffer size, default 5000
+    LogRotationEnabled: true,                   // Enable log rotation
+    LogRotationMaxAge:  30,                     // Log retention for 30 days
+
+    // Connection lifecycle configuration
+    ConnMaxLifetime:   30 * time.Minute,        // Maximum connection lifetime, recreate if exceeded
+    ConnMaxIdleTime:   10 * time.Minute,        // Maximum idle connection retention time
+
     // Timeout configuration
-    ConnTimeout:       5 * time.Second,
-    ReadTimeout:       3 * time.Second,
-    WriteTimeout:      3 * time.Second,
-    SlowQueryTime:     200 * time.Millisecond,
-    
-    // Logging configuration
-    LogLevel:          "warn",
-    LogDir:            "./logs",
-    Debug:             false,
-    EnablePoolStats:   true,
+    ConnTimeout:       5 * time.Second,         // Database connection establishment timeout
+    ReadTimeout:       3 * time.Second,         // Data read timeout
+    WriteTimeout:      3 * time.Second,         // Data write timeout
+    SlowQueryTime:     200 * time.Millisecond,  // Slow query threshold, queries exceeding this time will be logged
+
+    // Connection pool configuration
+    PoolStatsInterval: 1 * time.Minute,         // Connection pool statistics collection interval
+    MaxOpenConns:      100,                     // Maximum open connections, controlling maximum database concurrent connections
+    MaxIdleConns:      20,                      // Maximum idle connections, reducing frequent connection creation and destruction
+
+    // Debugging and monitoring
+    EnablePoolStats:   true,                    // Whether to enable performance metric collection
+    Debug:             true,                    // Whether to enable debug mode, will output more detailed logs
 }
 
 // Create database connection
-xdb, err := db.Open(config)
+xdb, err := db.New(config)
 if err != nil {
-    // Handle connection error
+    log.Fatal(err)
 }
 defer xdb.Close()
 ```
 
-## Configuration Options
+## Configuration Options Explained
 
 XLORM provides rich and flexible configuration options, each carefully designed to meet different scenario requirements.
 
@@ -161,7 +169,7 @@ XLORM provides rich and flexible configuration options, each carefully designed 
 
 | Configuration | Type | Default | Description | Recommended Setting |
 |--------------|------|---------|-------------|---------------------|
-| `DBName` | `string` | `""` | Database alias for distinguishing different database instances | Set a meaningful name |
+| `DBName` | `string` | `""` | Database alias for distinguishing different database instances | Recommend setting a meaningful name |
 | `Driver` | `string` | `"MySQL"` | Database driver type | Currently only supports MySQL |
 | `Host` | `string` | `"localhost"` | Database server address | Use actual server address in production |
 | `Port` | `int` | `3306` | Database server port | MySQL default is 3306 |
@@ -173,7 +181,7 @@ XLORM provides rich and flexible configuration options, each carefully designed 
 
 | Configuration | Type | Default | Description | Performance Suggestions |
 |--------------|------|---------|-------------|-------------------------|
-| `MaxOpenConns` | `int` | `100` | Maximum open connections | Adjust based on concurrent business volume |
+| `MaxOpenConns` | `int` | `100` | Maximum open connections | Adjust based on business concurrency, avoid overload |
 | `MaxIdleConns` | `int` | `20` | Maximum idle connections | Balance memory usage and connection reuse |
 | `ConnMaxLifetime` | `time.Duration` | `30 * time.Minute` | Maximum connection lifetime | Prevent long connection resource leaks |
 | `ConnMaxIdleTime` | `time.Duration` | `10 * time.Minute` | Maximum idle connection retention time | Control connection recycling frequency |
@@ -183,70 +191,89 @@ XLORM provides rich and flexible configuration options, each carefully designed 
 | Configuration | Type | Default | Description | Security Recommendations |
 |--------------|------|---------|-------------|--------------------------|
 | `ConnTimeout` | `time.Duration` | `5 * time.Second` | Connection establishment timeout | Adjust based on network conditions |
-| `ReadTimeout` | `time.Duration` | `3 * time.Second` | Read data timeout | Avoid long-time blocking |
-| `WriteTimeout` | `time.Duration` | `3 * time.Second` | Write data timeout | Prevent write operations from hanging |
+| `ReadTimeout` | `time.Duration` | `3 * time.Second` | Data read timeout | Avoid long-time blocking |
+| `WriteTimeout` | `time.Duration` | `3 * time.Second` | Data write timeout | Prevent write operations from hanging |
 | `SlowQueryTime` | `time.Duration` | `200 * time.Millisecond` | Slow query threshold | Set reasonably to detect performance issues |
 
-### Logging and Debugging Configuration
-
-| Configuration | Type | Default | Description | Usage Recommendations |
-|--------------|------|---------|-------------|------------------------|
-| `LogLevel` | `string` | `"warn"` | Log level | Recommend `warn`/`error` in production |
-| `Debug` | `bool` | `false` | Debug mode | Enable during development, disable in production |
-| `LogDir` | `string` | `"./logs"` | Log storage directory | Ensure directory is writable |
-| `LogBufferSize` | `int` | `5000` | Log buffer size | Adjust based on log volume |
-| `EnablePoolStats` | `bool` | `false` | Enable connection pool statistics | Enable during performance monitoring |
-
-### Advanced Configuration Considerations
-
-1. **Security**:
-   - Avoid hardcoding sensitive information in code
-   - Use environment variables to manage database credentials
-   - Limit connection pool size to prevent resource exhaustion
-
-2. **Performance Optimization**:
-   - Adjust `MaxOpenConns` and `MaxIdleConns` based on actual business scenarios
-   - Set timeout times reasonably to prevent resource waste
-   - Use `SlowQueryTime` to track performance bottlenecks
-
-3. **Log Management**:
-   - Recommend using `warn` or `error` level in production
-   - Regularly clean and backup log files
-   - Monitor log buffer usage
-
-### Configuration Example
+## Asynchronous Performance Metrics
 
 ```go
-config := &db.Config{
-    DBName:            "master",
-    Driver:            "MySQL",
-    Host:              os.Getenv("DB_HOST"),
-    Port:              3306,
-    Username:          os.Getenv("DB_USERNAME"),
-    Password:          os.Getenv("DB_PASSWORD"),
-    Database:          "myapp",
-    
-    // Connection pool configuration
-    MaxOpenConns:      50,
-    MaxIdleConns:      10,
-    ConnMaxLifetime:   30 * time.Minute,
-    
-    // Timeout configuration
-    ConnTimeout:       5 * time.Second,
-    ReadTimeout:       3 * time.Second,
-    WriteTimeout:      3 * time.Second,
-    SlowQueryTime:     200 * time.Millisecond,
-    
-    // Logging configuration
-    LogLevel:          "warn",
-    LogDir:            "./logs",
-    Debug:             false,
-    EnablePoolStats:   true,
-}
+// Asynchronous performance metrics to reduce impact on main business
+asyncMetrics := xdb.AsyncMetrics()
+
+// Get the number of dropped metrics (if metrics channel is full)
+droppedMetricsCount := asyncMetrics.GetDroppedMetricsCount()
 ```
 
-**Tip**: Always adjust configuration parameters based on specific business scenarios and performance requirements.
+### Connection Pool Metrics
+
+```go
+// Get connection pool statistics
+stats := xdb.GetPoolStats()
+
+// Print connection pool information
+fmt.Printf("Connection Pool Status:\n")
+fmt.Printf("Maximum Connections: %d\n", stats.MaxOpenConnections)
+fmt.Printf("Current Open Connections: %d\n", stats.OpenConnections)
+fmt.Printf("Connections In Use: %d\n", stats.InUse)
+fmt.Printf("Idle Connections: %d\n", stats.Idle)
+fmt.Printf("Wait Count: %d\n", stats.WaitCount)
+fmt.Printf("Total Wait Duration: %v\n", stats.WaitDuration)
+fmt.Printf("Connections Closed Due to Max Idle Time: %d\n", stats.MaxIdleClosed)
+fmt.Printf("Connections Closed Due to Max Lifetime: %d\n", stats.MaxLifetimeClosed)
+```
+
+## Security Recommendations
+
+### Configuration Security
+- Avoid hardcoding sensitive information
+- Use environment variables to manage database credentials
+- Limit connection pool size to prevent resource exhaustion
+
+### Data Masking
+- Automatically mask sensitive information in logs
+- Support custom masking rules
+
+## Contributing
+
+We welcome contributions! Here are some ways you can contribute to XLORM:
+
+### Reporting Issues
+- If you find a bug or have a feature request, please open an issue on our GitHub repository.
+- Provide a clear and detailed description of the problem or suggestion.
+- Include steps to reproduce the issue, if applicable.
+
+### Pull Requests
+- Fork the repository and create your branch from `main`.
+- Ensure your code follows the project's coding standards.
+- Write clear, concise commit messages.
+- Include tests for new features or bug fixes.
+- Update documentation if necessary.
+
+### Code of Conduct
+- Be respectful and inclusive.
+- Provide constructive feedback.
+- Collaborate and help each other grow.
+
+### Development Setup
+1. Clone the repository
+2. Install dependencies
+3. Run tests
+4. Make your changes
+5. Submit a pull request
+
+## Contact
+
+For questions, support, or collaboration, please contact:
+- Email: [your email]
+- GitHub: [project repository]
+- Website: [project website]
+
+## Acknowledgments
+- Thanks to all contributors who help improve XLORM
+- Inspired by existing ORM frameworks
+- Powered by Windsurf AI and DeepSeek R1
 
 ## License
 
-[MIT License]
+MIT License
