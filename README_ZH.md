@@ -481,7 +481,6 @@ builder := xdb.NewBuilder("orders").
     OrderBy("total_sales DESC").
     Limit(5)
 query, args := builder.Build()
-defer builder.ReleaseBuilder()
 ```
 
 ### 查询构建器特性
