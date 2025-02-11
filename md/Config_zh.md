@@ -64,7 +64,7 @@
 
 #### 示例
 ```go
-config := &Config{
+config := &xlorm.Config{
     Host:     "localhost",
     Port:     3306,
     Username: "root",
@@ -85,7 +85,7 @@ err := config.Validate()
 ### 配置示例
 
 ```go
-config := &Config{
+config := &xlorm.Config{
     Driver:            "mysql",
     Host:             "localhost",
     Port:             3306,

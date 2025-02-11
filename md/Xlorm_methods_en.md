@@ -32,7 +32,7 @@
 - Example:
 ```go
 // Create MySQL database connection
-config := &Config{
+config := &xlorm.Config{
     Host:     "localhost",
     Port:     3306,
     User:     "root",

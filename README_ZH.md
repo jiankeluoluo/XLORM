@@ -119,7 +119,7 @@ go get github.com/jiankeluoluo/xlorm
 import "your_project/db"
 
 // 配置数据库连接
-config := &db.Config{
+config := &xlorm.Config{
     DBName:            "master",               //数据库别名称、用于区分不同数据库
     Driver:            "MySQL",                 // 数据库驱动类型，目前仅支持 "MySQL"
     Host:              "localhost",             // 数据库服务器地址，支持 IP 或域名
@@ -156,7 +156,7 @@ config := &db.Config{
 }
 
 // 创建数据库连接
-xdb, err := db.New(config)
+xdb, err := xlorm.New(config)
 if err != nil {
     log.Fatal(err)
 }
@@ -227,7 +227,7 @@ XLORM 提供了丰富且灵活的配置选项，每个配置都经过精心设�
 ### 配置示例
 
 ```go
-config := &db.Config{
+config := &xlorm.Config{
     DBName:            "master",
     Driver:            "MySQL",
     Host:              os.Getenv("DB_HOST"),
@@ -268,19 +268,19 @@ result, err := xdb.M("users").
     Fields("id, name, age").
     Find()
 
-users := db.M("users").
+users := xdb.M("users").
     NotWhere("status = ?", "banned").
     Find()
 // SQL: SELECT * FROM users WHERE NOT (status = 'banned')
 
-users := db.M("users").
+users := xdb.M("users").
     Where("age > ?", 18).
     NotWhere("status = ?", "banned").
     OrWhere("vip = ?", true).
     Find()
 // SQL: SELECT * FROM users WHERE (age > 18 AND NOT (status = 'banned')) OR vip = true
 
-products := db.M("products").
+products := xdb.M("products").
     Where("category = ?", "electronics").
     NotWhere("price < ?", 100).
     OrWhere("discount > ?", 0.5).
@@ -298,19 +298,19 @@ results, err := xdb.M("users").
     Limit(10).
     FindAll()
 
-users := db.M("users").
+users := xdb.M("users").
     NotWhere("status = ?", "banned").
     FindAll()
 // SQL: SELECT * FROM users WHERE NOT (status = 'banned')
 
-users := db.M("users").
+users := xdb.M("users").
     Where("age > ?", 18).
     NotWhere("status = ?", "banned").
     OrWhere("vip = ?", true).
     FindAll()
 // SQL: SELECT * FROM users WHERE (age > 18 AND NOT (status = 'banned')) OR vip = true
 
-products := db.M("products").
+products := xdb.M("products").
     Where("category = ?", "electronics").
     NotWhere("price < ?", 100).
     OrWhere("discount > ?", 0.5).
@@ -412,7 +412,7 @@ rowsAffected, err := xdb.M("users").
 ### 4. 事务处理
 
 ```go
-err := xdb.ExecTx(func(tx *db.Transaction) error {
+err := xdb.ExecTx(func(tx *xlorm.Transaction) error {
     // 转账示例：从账户A扣款，向账户B转账
     _, err := tx.Exec("UPDATE accounts SET balance = balance - 100 WHERE id = ?", 1)
     if err != nil {
@@ -525,7 +525,7 @@ XLORM 支持按天自动分割日志文件，并可配置日志保留时间：
 
 ```go
 
-config := &db.Config{
+config := &xlorm.Config{
     LogDir: "./logs",  // 自定义日志目录
     LogLevel: "debug",        // 设置日志级别
     LogBufferSize: 5000,      // 日志缓冲区数量（默认5000）

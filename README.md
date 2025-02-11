@@ -117,7 +117,7 @@ go get github.com/jiankeluoluo/xlorm
 import "your_project/db"
 
 // Configure database connection
-config := &db.Config{
+config := &xlorm.Config{
     DBName:            "master",               // Database alias for distinguishing different database instances
     Driver:            "MySQL",                 // Database driver type, currently only supports "MySQL"
     Host:              "localhost",             // Database server address, supports IP or domain
@@ -154,7 +154,7 @@ config := &db.Config{
 }
 
 // Create database connection
-xdb, err := db.New(config)
+xdb, err := xlorm.New(config)
 if err != nil {
     log.Fatal(err)
 }
